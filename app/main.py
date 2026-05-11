@@ -139,6 +139,25 @@ async def _collect_forecast_inputs(
         reports = reports_result
 
     moon = moon_info(forecast_date)
+    conditions = ConditionsSnapshot(
+        wind_speed=weather.get("wind_speed"),
+        wind_direction=weather.get("wind_direction"),
+        wind_gusts=weather.get("wind_gusts"),
+        air_temperature=weather.get("air_temperature"),
+        pressure=weather.get("pressure"),
+        pressure_trend=weather.get("pressure_trend"),
+        cloud_cover=weather.get("cloud_cover"),
+        rain=weather.get("rain"),
+        wave_height=marine.get("wave_height"),
+        wave_period=marine.get("wave_period"),
+        wave_direction=marine.get("wave_direction"),
+        sea_temperature=marine.get("sea_temperature"),
+        tide_level=marine.get("tide_level"),
+        sunrise=weather.get("sunrise"),
+        sunset=weather.get("sunset"),
+        moon_phase=moon.get("moon_phase"),
+        moon_illumination=moon.get("moon_illumination"),
+    )
     similar = find_similar_reports(
         reports=reports,
         spot=fishing_spot.name,
@@ -148,7 +167,23 @@ async def _collect_forecast_inputs(
         sea_temperature=marine.get("sea_temperature"),
         target_species=target_species,
     )
-    baseline = build_forecast(
+    return fishing_spot, weather_ok, marine_ok, reports_ok, reports, similar, conditions, warnings, weather, marine, moon
+
+
+def _build_legacy_baseline(
+    fishing_spot,
+    forecast_date: date,
+    start_time: time | None,
+    end_time: time | None,
+    target_species: str | None,
+    weather: dict,
+    marine: dict,
+    moon: dict,
+    reports: list[ReportOut],
+    similar: list[SimilarReport],
+    warnings: list[str],
+) -> ForecastResponse:
+    return build_forecast(
         spot=fishing_spot,
         forecast_date=forecast_date,
         start_time=start_time,
@@ -161,7 +196,6 @@ async def _collect_forecast_inputs(
         similar_reports=similar,
         warnings=warnings,
     )
-    return fishing_spot, weather_ok, marine_ok, reports_ok, reports, similar, baseline
 
 
 @app.get("/forecast", response_model=ForecastResponse)
@@ -173,10 +207,22 @@ async def forecast(
     target_species: Annotated[str | None, Query(description="Optional species filter")] = None,
     settings: Settings = Depends(settings_dep),
 ) -> ForecastResponse:
-    _, _, _, _, _, _, baseline = await _collect_forecast_inputs(
+    fishing_spot, _, _, _, reports, similar, _, warnings, weather, marine, moon = await _collect_forecast_inputs(
         settings, spot, date_, start_time, end_time, target_species
     )
-    return baseline
+    return _build_legacy_baseline(
+        fishing_spot,
+        date_,
+        start_time,
+        end_time,
+        target_species,
+        weather,
+        marine,
+        moon,
+        reports,
+        similar,
+        warnings,
+    )
 
 
 @app.get("/forecast-context", response_model=ForecastContextResponse)
@@ -188,10 +234,10 @@ async def forecast_context(
     target_species: Annotated[str | None, Query(description="Optional species filter")] = None,
     settings: Settings = Depends(settings_dep),
 ) -> ForecastContextResponse:
-    fishing_spot, weather_ok, marine_ok, reports_ok, reports, similar, baseline = await _collect_forecast_inputs(
+    fishing_spot, weather_ok, marine_ok, reports_ok, reports, similar, conditions, warnings, _, _, _ = await _collect_forecast_inputs(
         settings, spot, date_, start_time, end_time, target_species
     )
-    missing_data = _missing_condition_fields(baseline.conditions)
+    missing_data = _missing_condition_fields(conditions)
     notes = []
     if len(reports) < 10:
         notes.append("historical data is limited; use expert interpretation carefully")
@@ -212,7 +258,7 @@ async def forecast_context(
         end_time=end_time.isoformat(timespec="minutes") if end_time else None,
         target_species=target_species,
         spot_profile=fishing_spot.to_dict(),
-        conditions=baseline.conditions,
+        conditions=conditions,
         api_raw_available={"weather": weather_ok, "marine": marine_ok, "historical_reports": reports_ok},
         data_quality=DataQuality(
             weather_api_ok=weather_ok,
@@ -226,12 +272,12 @@ async def forecast_context(
         seasonal_species_notes=_seasonal_species_notes(date_.month, target_species),
         recent_reports=_recent_reports(reports, fishing_spot.name),
         similar_reports=similar,
-        rule_based_baseline=baseline,
-        warnings=baseline.warnings,
+        warnings=warnings,
         llm_instructions=[
             "Do not invent exact weather, sea, moon, or historical report values that are null or missing.",
-            "Use rule_based_baseline as a sanity check, not as the final answer.",
-            "Return probabilities and confidence, but explain that they are decision-support estimates, not guarantees.",
+            "You, the LLM, must calculate bite scores and species probabilities yourself from the facts in this context.",
+            "Do not treat backend /forecast scores as authoritative for this context response.",
+            "Return probabilities and confidence, but explain they are LLM expert estimates, not API-calculated facts or guarantees.",
             "If historical_reports_count is low, explicitly say that local historical data is limited.",
             "Include safety warnings when reef, wind, swell, darkness, or access risks matter.",
             "Favor practical shore-spinning recommendations: species, best window, lures, retrieve, and where to cast.",

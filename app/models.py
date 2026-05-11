@@ -151,6 +151,5 @@ class ForecastContextResponse(BaseModel):
     seasonal_species_notes: list[SeasonalSpeciesNote]
     recent_reports: list[ReportOut]
     similar_reports: list[SimilarReport]
-    rule_based_baseline: ForecastResponse
     warnings: list[str]
     llm_instructions: list[str]

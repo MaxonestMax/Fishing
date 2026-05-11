@@ -34,7 +34,7 @@ paths:
     get:
       operationId: getFishingForecastContext
       summary: Get factual context for an LLM-generated fishing forecast
-      description: Use this as the primary forecast action. It returns facts, API conditions, data quality, seasonal species notes, similar reports, recent reports, and a rule-based baseline for the GPT to interpret.
+      description: Use this as the primary forecast action. It returns facts, API conditions, data quality, seasonal species notes, similar reports, and recent reports. The GPT must calculate bite scores and probabilities itself.
       parameters:
         - name: spot
           in: query
@@ -72,46 +72,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ForecastContextResponse"
-
-  /forecast:
-    get:
-      operationId: getFishingForecast
-      summary: Get a rule-based shore spinning bite forecast
-      parameters:
-        - name: spot
-          in: query
-          required: true
-          schema:
-            type: string
-            enum: [Bat Yam, Jaffa]
-        - name: date
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-        - name: start_time
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: end_time
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: target_species
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Forecast response
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ForecastResponse"
 
   /report:
     post:
@@ -345,28 +305,6 @@ components:
           type: number
           nullable: true
 
-    SpeciesForecast:
-      type: object
-      properties:
-        species:
-          type: string
-        probability:
-          type: integer
-          minimum: 0
-          maximum: 100
-        confidence:
-          type: string
-          enum: [low, medium, high]
-        best_time:
-          type: string
-          nullable: true
-        recommended_lures:
-          type: array
-          items:
-            type: string
-        reason:
-          type: string
-
     SimilarReport:
       type: object
       properties:
@@ -391,34 +329,6 @@ components:
           type: integer
           minimum: 0
           maximum: 100
-
-    ForecastResponse:
-      type: object
-      properties:
-        spot:
-          type: string
-        date:
-          type: string
-        overall_score:
-          type: integer
-          minimum: 0
-          maximum: 100
-        conditions_summary:
-          type: string
-        conditions:
-          $ref: "#/components/schemas/Conditions"
-        species_forecast:
-          type: array
-          items:
-            $ref: "#/components/schemas/SpeciesForecast"
-        similar_reports:
-          type: array
-          items:
-            $ref: "#/components/schemas/SimilarReport"
-        warnings:
-          type: array
-          items:
-            type: string
 
     SeasonalSpeciesNote:
       type: object
@@ -514,8 +424,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SimilarReport"
-        rule_based_baseline:
-          $ref: "#/components/schemas/ForecastResponse"
         warnings:
           type: array
           items:
