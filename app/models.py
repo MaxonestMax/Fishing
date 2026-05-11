@@ -1,13 +1,15 @@
 from datetime import date, datetime, time, timezone
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 Confidence = Literal["low", "medium", "high"]
 
 
 class ReportIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     angler_name: str | None = None
     spot: str
     date: date

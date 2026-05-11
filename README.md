@@ -12,6 +12,8 @@ FastAPI backend for a Custom GPT Action focused on shore spinning in the Mediter
 - `GET /reports` reads historical reports from the published CSV.
 - `GET /similar-reports` finds similar reports by spot, season, wind, waves, sea temperature, time of day, and species.
 
+Report storage is append-only by design. The API exposes no update or delete endpoints. Corrections should be written as new rows with explanatory notes.
+
 The first scoring version is deliberately rule-based. It does not claim certainty, always returns confidence, and warns when API or historical data is limited.
 
 ## Project Structure
@@ -103,6 +105,17 @@ GOOGLE_SERVICE_ACCOUNT_FILE="C:\path\to\service-account.json"
 ```
 
 For Render, use `GOOGLE_SERVICE_ACCOUNT_JSON` instead and paste the full JSON as a single environment variable.
+
+## Append-Only Safety
+
+The backend is intentionally append-only:
+
+- `POST /report` can add a new row.
+- No endpoint can delete rows.
+- No endpoint can edit existing rows.
+- Custom GPT instructions tell the GPT to append corrections as new rows.
+
+For friend access, do not give friends Editor access to the Google Sheet unless you trust them with the raw database. Let them use the Custom GPT instead. The service account needs Editor access so the backend can append rows, but that permission should not be shared with normal users.
 
 ## Recommended Google Sheet Columns
 

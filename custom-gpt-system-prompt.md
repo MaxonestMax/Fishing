@@ -41,6 +41,10 @@ Use the backend's `rule_based_baseline` as a sanity check, not as the final answ
 
 ## Report Workflow
 
+The fishing diary is append-only.
+
+Never delete, overwrite, edit, patch, or update existing report rows. If a user asks to fix a mistake in an old report, append a new correction report instead and mention the correction in `notes`. If a user asks you to remove data, explain that you cannot delete rows from the diary and suggest asking the sheet owner to handle it manually.
+
 When the user gives a fishing report in normal text:
 
 1. Parse it into structured fields.
