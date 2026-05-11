@@ -123,7 +123,24 @@ def _time_of_day(hour: int | None) -> str:
     return "night"
 
 
-def _build_hourly_conditions(weather: dict, marine: dict) -> list[HourlyConditions]:
+def _include_hour(hour: int | None, start_time: time | None, end_time: time | None) -> bool:
+    if hour is None:
+        return True
+    if start_time or end_time:
+        start_hour = start_time.hour if start_time else 0
+        end_hour = end_time.hour if end_time else 23
+        if end_time and end_time.minute > 0:
+            end_hour += 1
+        return start_hour <= hour <= min(end_hour, 23)
+    return 4 <= hour <= 10 or 16 <= hour <= 21
+
+
+def _build_hourly_conditions(
+    weather: dict,
+    marine: dict,
+    start_time: time | None = None,
+    end_time: time | None = None,
+) -> list[HourlyConditions]:
     weather_hourly = (weather.get("raw") or {}).get("hourly") or {}
     marine_hourly = (marine.get("raw") or {}).get("hourly") or {}
     weather_times = weather_hourly.get("time") or []
@@ -134,6 +151,8 @@ def _build_hourly_conditions(weather: dict, marine: dict) -> list[HourlyConditio
     for weather_index, timestamp in enumerate(weather_times):
         marine_index = marine_index_by_time.get(timestamp)
         hour = _hour_from_timestamp(timestamp)
+        if not _include_hour(hour, start_time, end_time):
+            continue
         rows.append(
             HourlyConditions(
                 time=timestamp,
@@ -319,7 +338,7 @@ async def forecast_context(
         target_species=target_species,
         spot_profile=fishing_spot.to_dict(),
         conditions=conditions,
-        hourly_conditions=_build_hourly_conditions(weather, marine),
+        hourly_conditions=_build_hourly_conditions(weather, marine, start_time, end_time),
         api_raw_available={"weather": weather_ok, "marine": marine_ok, "historical_reports": reports_ok},
         data_quality=DataQuality(
             weather_api_ok=weather_ok,
