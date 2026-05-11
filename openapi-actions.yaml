@@ -4,7 +4,7 @@ info:
   version: 0.1.0
   description: Custom GPT Actions backend for shore spinning forecasts and fishing reports in Israel's Mediterranean coast.
 servers:
-  - url: https://YOUR-RENDER-SERVICE.onrender.com
+  - url: https://fishing-wgzo.onrender.com
 paths:
   /health:
     get:
@@ -16,12 +16,8 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  service:
-                    type: string
+                $ref: "#/components/schemas/HealthResponse"
+
   /spots:
     get:
       operationId: listFishingSpots
@@ -32,58 +28,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  spots:
-                    type: array
-                    items:
-                      type: object
-  /forecast:
-    get:
-      operationId: getFishingForecast
-      summary: Get a shore spinning bite forecast
-      parameters:
-        - name: spot
-          in: query
-          required: true
-          schema:
-            type: string
-            enum: [Bat Yam, Jaffa]
-        - name: date
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-        - name: start_time
-          in: query
-          required: false
-          schema:
-            type: string
-            pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
-        - name: end_time
-          in: query
-          required: false
-          schema:
-            type: string
-            pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
-        - name: target_species
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Forecast response
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ForecastResponse"
+                $ref: "#/components/schemas/SpotsResponse"
+
   /forecast-context:
     get:
       operationId: getFishingForecastContext
       summary: Get factual context for an LLM-generated fishing forecast
-      description: Returns spot profile, API conditions, data quality, seasonal species notes, recent reports, similar reports, and a rule-based baseline. The Custom GPT should use this as grounding for its final forecast.
+      description: Use this as the primary forecast action. It returns facts, API conditions, data quality, seasonal species notes, similar reports, recent reports, and a rule-based baseline for the GPT to interpret.
       parameters:
         - name: spot
           in: query
@@ -102,13 +53,13 @@ paths:
           required: false
           schema:
             type: string
-            pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+            description: HH:MM
         - name: end_time
           in: query
           required: false
           schema:
             type: string
-            pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+            description: HH:MM
         - name: target_species
           in: query
           required: false
@@ -121,6 +72,47 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ForecastContextResponse"
+
+  /forecast:
+    get:
+      operationId: getFishingForecast
+      summary: Get a rule-based shore spinning bite forecast
+      parameters:
+        - name: spot
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [Bat Yam, Jaffa]
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: start_time
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: end_time
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: target_species
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Forecast response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastResponse"
+
   /report:
     post:
       operationId: addFishingReport
@@ -137,9 +129,8 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-        "503":
-          description: Google Sheets write credentials are not configured
+                $ref: "#/components/schemas/ReportAppendResponse"
+
   /reports:
     get:
       operationId: listFishingReports
@@ -182,6 +173,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ReportOut"
+
   /similar-reports:
     get:
       operationId: findSimilarFishingReports
@@ -252,8 +244,286 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/SimilarReport"
+
 components:
   schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+
+    SpotsResponse:
+      type: object
+      properties:
+        spots:
+          type: array
+          items:
+            $ref: "#/components/schemas/Spot"
+
+    Spot:
+      type: object
+      properties:
+        name:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        fishing_type:
+          type: string
+        depth_m:
+          type: string
+        bottom:
+          type: string
+        geometry_notes:
+          type: string
+        good_for:
+          type: array
+          items:
+            type: string
+        safety_notes:
+          type: array
+          items:
+            type: string
+
+    Conditions:
+      type: object
+      properties:
+        wind_speed:
+          type: number
+          nullable: true
+        wind_direction:
+          type: number
+          nullable: true
+        wind_gusts:
+          type: number
+          nullable: true
+        air_temperature:
+          type: number
+          nullable: true
+        pressure:
+          type: number
+          nullable: true
+        pressure_trend:
+          type: number
+          nullable: true
+        cloud_cover:
+          type: number
+          nullable: true
+        rain:
+          type: number
+          nullable: true
+        wave_height:
+          type: number
+          nullable: true
+        wave_period:
+          type: number
+          nullable: true
+        wave_direction:
+          type: number
+          nullable: true
+        sea_temperature:
+          type: number
+          nullable: true
+        tide_level:
+          type: number
+          nullable: true
+        sunrise:
+          type: string
+          nullable: true
+        sunset:
+          type: string
+          nullable: true
+        moon_phase:
+          type: string
+          nullable: true
+        moon_illumination:
+          type: number
+          nullable: true
+
+    SpeciesForecast:
+      type: object
+      properties:
+        species:
+          type: string
+        probability:
+          type: integer
+          minimum: 0
+          maximum: 100
+        confidence:
+          type: string
+          enum: [low, medium, high]
+        best_time:
+          type: string
+          nullable: true
+        recommended_lures:
+          type: array
+          items:
+            type: string
+        reason:
+          type: string
+
+    SimilarReport:
+      type: object
+      properties:
+        angler_name:
+          type: string
+          nullable: true
+        date:
+          type: string
+          nullable: true
+        spot:
+          type: string
+          nullable: true
+        species:
+          type: string
+          nullable: true
+        lure:
+          type: string
+          nullable: true
+        summary:
+          type: string
+        similarity_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+
+    ForecastResponse:
+      type: object
+      properties:
+        spot:
+          type: string
+        date:
+          type: string
+        overall_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        conditions_summary:
+          type: string
+        conditions:
+          $ref: "#/components/schemas/Conditions"
+        species_forecast:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpeciesForecast"
+        similar_reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/SimilarReport"
+        warnings:
+          type: array
+          items:
+            type: string
+
+    SeasonalSpeciesNote:
+      type: object
+      properties:
+        species:
+          type: string
+        active_months:
+          type: array
+          items:
+            type: integer
+        preferred_sea_temperature_c:
+          type: array
+          items:
+            type: integer
+        season_status:
+          type: string
+          enum: [favorable, near-season, off-season]
+        recommended_lures:
+          type: array
+          items:
+            type: string
+        behavior_clues:
+          type: array
+          items:
+            type: string
+
+    DataQuality:
+      type: object
+      properties:
+        weather_api_ok:
+          type: boolean
+        marine_api_ok:
+          type: boolean
+        historical_reports_ok:
+          type: boolean
+        historical_reports_count:
+          type: integer
+        similar_reports_count:
+          type: integer
+        missing_data:
+          type: array
+          items:
+            type: string
+        notes:
+          type: array
+          items:
+            type: string
+
+    ForecastContextResponse:
+      type: object
+      properties:
+        purpose:
+          type: string
+        llm_role:
+          type: string
+        spot:
+          type: string
+        date:
+          type: string
+        start_time:
+          type: string
+          nullable: true
+        end_time:
+          type: string
+          nullable: true
+        target_species:
+          type: string
+          nullable: true
+        spot_profile:
+          $ref: "#/components/schemas/Spot"
+        conditions:
+          $ref: "#/components/schemas/Conditions"
+        api_raw_available:
+          type: object
+          properties:
+            weather:
+              type: boolean
+            marine:
+              type: boolean
+            historical_reports:
+              type: boolean
+        data_quality:
+          $ref: "#/components/schemas/DataQuality"
+        seasonal_species_notes:
+          type: array
+          items:
+            $ref: "#/components/schemas/SeasonalSpeciesNote"
+        recent_reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportOut"
+        similar_reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/SimilarReport"
+        rule_based_baseline:
+          $ref: "#/components/schemas/ForecastResponse"
+        warnings:
+          type: array
+          items:
+            type: string
+        llm_instructions:
+          type: array
+          items:
+            type: string
+
     ReportIn:
       type: object
       required: [spot, date]
@@ -321,144 +591,70 @@ components:
         created_at:
           type: string
           format: date-time
+
     ReportOut:
-      type: object
-      additionalProperties: true
-    SimilarReport:
       type: object
       properties:
         angler_name:
           type: string
-        date:
-          type: string
+          nullable: true
         spot:
           type: string
-        species:
-          type: string
-        lure:
-          type: string
-        summary:
-          type: string
-        similarity_score:
-          type: integer
-          minimum: 0
-          maximum: 100
-    ForecastResponse:
-      type: object
-      properties:
-        spot:
-          type: string
+          nullable: true
         date:
           type: string
-          format: date
-        overall_score:
-          type: integer
-          minimum: 0
-          maximum: 100
-        conditions_summary:
-          type: string
-        conditions:
-          type: object
-          additionalProperties: true
-        species_forecast:
-          type: array
-          items:
-            type: object
-            properties:
-              species:
-                type: string
-              probability:
-                type: integer
-                minimum: 0
-                maximum: 100
-              confidence:
-                type: string
-                enum: [low, medium, high]
-              best_time:
-                type: string
-              recommended_lures:
-                type: array
-                items:
-                  type: string
-              reason:
-                type: string
-        similar_reports:
-          type: array
-          items:
-            $ref: "#/components/schemas/SimilarReport"
-        warnings:
-          type: array
-          items:
-            type: string
-    ForecastContextResponse:
-      type: object
-      properties:
-        purpose:
-          type: string
-        llm_role:
-          type: string
-        spot:
-          type: string
-        date:
-          type: string
-          format: date
+          nullable: true
         start_time:
           type: string
+          nullable: true
         end_time:
           type: string
-        target_species:
+          nullable: true
+        species_caught:
           type: string
-        spot_profile:
-          type: object
-          additionalProperties: true
-        conditions:
-          type: object
-          additionalProperties: true
-        api_raw_available:
-          type: object
-          additionalProperties:
-            type: boolean
-        data_quality:
-          type: object
-          properties:
-            weather_api_ok:
-              type: boolean
-            marine_api_ok:
-              type: boolean
-            historical_reports_ok:
-              type: boolean
-            historical_reports_count:
-              type: integer
-            similar_reports_count:
-              type: integer
-            missing_data:
-              type: array
-              items:
-                type: string
-            notes:
-              type: array
-              items:
-                type: string
-        seasonal_species_notes:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-        recent_reports:
-          type: array
-          items:
-            $ref: "#/components/schemas/ReportOut"
-        similar_reports:
-          type: array
-          items:
-            $ref: "#/components/schemas/SimilarReport"
-        rule_based_baseline:
-          $ref: "#/components/schemas/ForecastResponse"
-        warnings:
-          type: array
-          items:
-            type: string
-        llm_instructions:
-          type: array
-          items:
-            type: string
+          nullable: true
+        fish_count:
+          type: integer
+          nullable: true
+        size_cm:
+          type: number
+          nullable: true
+        weight_kg:
+          type: number
+          nullable: true
+        lure_type:
+          type: string
+          nullable: true
+        lure_name:
+          type: string
+          nullable: true
+        lure_size_mm:
+          type: number
+          nullable: true
+        lure_weight_g:
+          type: number
+          nullable: true
+        lure_color:
+          type: string
+          nullable: true
+        retrieve_style:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    ReportAppendResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+        updated_range:
+          type: string
+          nullable: true
+        report:
+          $ref: "#/components/schemas/ReportIn"
+        conditions_snapshot:
+          $ref: "#/components/schemas/Conditions"
