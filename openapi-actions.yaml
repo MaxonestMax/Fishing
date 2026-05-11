@@ -1,0 +1,464 @@
+openapi: 3.1.0
+info:
+  title: AI Fishing Concierge API
+  version: 0.1.0
+  description: Custom GPT Actions backend for shore spinning forecasts and fishing reports in Israel's Mediterranean coast.
+servers:
+  - url: https://YOUR-RENDER-SERVICE.onrender.com
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Check backend health
+      responses:
+        "200":
+          description: Service status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  service:
+                    type: string
+  /spots:
+    get:
+      operationId: listFishingSpots
+      summary: List available fishing spots
+      responses:
+        "200":
+          description: Available spots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  spots:
+                    type: array
+                    items:
+                      type: object
+  /forecast:
+    get:
+      operationId: getFishingForecast
+      summary: Get a shore spinning bite forecast
+      parameters:
+        - name: spot
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [Bat Yam, Jaffa]
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: start_time
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        - name: end_time
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        - name: target_species
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Forecast response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastResponse"
+  /forecast-context:
+    get:
+      operationId: getFishingForecastContext
+      summary: Get factual context for an LLM-generated fishing forecast
+      description: Returns spot profile, API conditions, data quality, seasonal species notes, recent reports, similar reports, and a rule-based baseline. The Custom GPT should use this as grounding for its final forecast.
+      parameters:
+        - name: spot
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [Bat Yam, Jaffa]
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: start_time
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        - name: end_time
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        - name: target_species
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Context package for LLM forecast generation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastContextResponse"
+  /report:
+    post:
+      operationId: addFishingReport
+      summary: Add a fishing report to Google Sheets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportIn"
+      responses:
+        "200":
+          description: Report appended
+          content:
+            application/json:
+              schema:
+                type: object
+        "503":
+          description: Google Sheets write credentials are not configured
+  /reports:
+    get:
+      operationId: listFishingReports
+      summary: Read historical fishing reports
+      parameters:
+        - name: spot
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [Bat Yam, Jaffa]
+        - name: date_from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: species
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: angler_name
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Report list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReportOut"
+  /similar-reports:
+    get:
+      operationId: findSimilarFishingReports
+      summary: Find historical reports similar to current conditions
+      parameters:
+        - name: spot
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [Bat Yam, Jaffa]
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: wind_direction
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 0
+            maximum: 360
+        - name: wave_height
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 0
+        - name: sea_temperature
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: time_of_day
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [dawn, day, dusk, night]
+        - name: target_species
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 5
+      responses:
+        "200":
+          description: Similar reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SimilarReport"
+components:
+  schemas:
+    ReportIn:
+      type: object
+      required: [spot, date]
+      properties:
+        angler_name:
+          type: string
+        spot:
+          type: string
+          enum: [Bat Yam, Jaffa]
+        date:
+          type: string
+          format: date
+        start_time:
+          type: string
+        end_time:
+          type: string
+        species_caught:
+          type: string
+        fish_count:
+          type: integer
+          minimum: 0
+        size_cm:
+          type: number
+          minimum: 0
+        weight_kg:
+          type: number
+          minimum: 0
+        lure_type:
+          type: string
+        lure_name:
+          type: string
+        lure_size_mm:
+          type: number
+          minimum: 0
+        lure_weight_g:
+          type: number
+          minimum: 0
+        lure_color:
+          type: string
+        retrieve_style:
+          type: string
+        water_clarity_score:
+          type: integer
+          minimum: 1
+          maximum: 10
+        baitfish_presence_score:
+          type: integer
+          minimum: 1
+          maximum: 10
+        bird_activity_score:
+          type: integer
+          minimum: 1
+          maximum: 10
+        hits_count:
+          type: integer
+          minimum: 0
+        follows_count:
+          type: integer
+          minimum: 0
+        lost_fish_count:
+          type: integer
+          minimum: 0
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    ReportOut:
+      type: object
+      additionalProperties: true
+    SimilarReport:
+      type: object
+      properties:
+        angler_name:
+          type: string
+        date:
+          type: string
+        spot:
+          type: string
+        species:
+          type: string
+        lure:
+          type: string
+        summary:
+          type: string
+        similarity_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+    ForecastResponse:
+      type: object
+      properties:
+        spot:
+          type: string
+        date:
+          type: string
+          format: date
+        overall_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        conditions_summary:
+          type: string
+        conditions:
+          type: object
+          additionalProperties: true
+        species_forecast:
+          type: array
+          items:
+            type: object
+            properties:
+              species:
+                type: string
+              probability:
+                type: integer
+                minimum: 0
+                maximum: 100
+              confidence:
+                type: string
+                enum: [low, medium, high]
+              best_time:
+                type: string
+              recommended_lures:
+                type: array
+                items:
+                  type: string
+              reason:
+                type: string
+        similar_reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/SimilarReport"
+        warnings:
+          type: array
+          items:
+            type: string
+    ForecastContextResponse:
+      type: object
+      properties:
+        purpose:
+          type: string
+        llm_role:
+          type: string
+        spot:
+          type: string
+        date:
+          type: string
+          format: date
+        start_time:
+          type: string
+        end_time:
+          type: string
+        target_species:
+          type: string
+        spot_profile:
+          type: object
+          additionalProperties: true
+        conditions:
+          type: object
+          additionalProperties: true
+        api_raw_available:
+          type: object
+          additionalProperties:
+            type: boolean
+        data_quality:
+          type: object
+          properties:
+            weather_api_ok:
+              type: boolean
+            marine_api_ok:
+              type: boolean
+            historical_reports_ok:
+              type: boolean
+            historical_reports_count:
+              type: integer
+            similar_reports_count:
+              type: integer
+            missing_data:
+              type: array
+              items:
+                type: string
+            notes:
+              type: array
+              items:
+                type: string
+        seasonal_species_notes:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        recent_reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportOut"
+        similar_reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/SimilarReport"
+        rule_based_baseline:
+          $ref: "#/components/schemas/ForecastResponse"
+        warnings:
+          type: array
+          items:
+            type: string
+        llm_instructions:
+          type: array
+          items:
+            type: string
