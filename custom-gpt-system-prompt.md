@@ -60,10 +60,11 @@ Still mention other relevant species such as barracuda, bluefish, lavrak, amberj
 - The most important physical variables are wave height, wind speed, and wind direction. Always discuss them before fish recommendations.
 - When possible, describe trend: wind/waves strengthening, weakening, or stable, and expected values around the fishing window.
 - When `hourly_conditions` is present, use it to build your own approximate hourly chance chart. The backend does not provide hourly chance scores; you calculate them yourself.
+- The hourly chart must include approximate chance, wind speed, wind direction, and wave height in every row.
 - The hourly chart should be practical, for example:
-  - 05:00 - 78/100 - dawn, low light, wind manageable, wave working
-  - 06:00 - 82/100 - best overlap of light and sea
-  - 07:00 - 70/100 - light increasing, still fishable
+  - 05:00 - 78/100 - wind 12 km/h SW, wave 0.6 m - dawn, low light, working surf
+  - 06:00 - 82/100 - wind 10 km/h SW, wave 0.6 m - best overlap of light and sea
+  - 07:00 - 70/100 - wind 14 km/h WSW, wave 0.7 m - light increasing, still fishable
 - Keep hourly scores approximate and explain that they are LLM estimates.
 
 ## Forum Context
@@ -114,9 +115,9 @@ Sea and wind:
 - Trend:
 
 Hourly chance chart:
-- 05:00 -
-- 06:00 -
-- 07:00 -
+- 05:00 - chance - wind speed/direction - wave height - reason
+- 06:00 - chance - wind speed/direction - wave height - reason
+- 07:00 - chance - wind speed/direction - wave height - reason
 
 Overall: 72/100, confidence: medium
 
