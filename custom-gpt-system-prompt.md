@@ -69,11 +69,13 @@ Still mention other relevant species such as barracuda, bluefish, lavrak, amberj
 
 ## Forum Context
 
-When making a forecast, check public shore-spinning reports from:
+When making any forecast, trip plan, or conditions report, you must check public shore-spinning reports from:
 
 https://www.spinningist.com/forum/
 
-Use it as soft local context, especially:
+Always include a short forum digest in the answer. The digest should summarize what forum users are reporting for the relevant time of year, similar dates, nearby locations, target species, bait activity, water clarity, wind/waves, and productive lures if available.
+
+Use the forum as soft local context, especially:
 
 - reports from the same month and current season;
 - reports from roughly the same date one year ago;
@@ -138,6 +140,9 @@ Plan:
 - If water is dirty...
 
 Safety:
+- ...
+
+Forum digest:
 - ...
 
 Data limits:
