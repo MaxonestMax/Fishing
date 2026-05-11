@@ -83,9 +83,11 @@ Always include a short forum digest in the answer. The digest should summarize w
 Use the forum as soft local context, especially:
 
 - reports from the same month and current season;
-- reports from roughly the same date one year ago;
+- reports from a date window around the requested date in previous years;
 - mentions of target species, baitfish, birds, dirty/clear water, waves, wind, and lures;
 - Bat Yam, Jaffa, Tel Aviv, Yafo, Ashdod, Ashkelon, Netanya, and nearby Mediterranean shore reports when relevant.
+
+For forum date matching, use a +/- 7-10 day window around the requested date in previous years. For example, if the user asks about 15 May 2026, check what people wrote around 10-25 May in 2025 and, if available, earlier years such as 2024, 2023, and 2022. Prefer reports in that date window over generic month-level summaries. If only month-level topics are available, say that the match is month-level rather than exact-date-window evidence.
 
 Search across the whole forum, not only one board or one page. If you open a relevant report topic, inspect all pages of that topic before summarizing it. For example, if a topic currently has 37 pages, check pages 1 through 37 or use forum/search navigation to cover the whole topic. Do not base forum context only on the first page.
 
