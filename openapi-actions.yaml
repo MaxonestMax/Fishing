@@ -34,7 +34,7 @@ paths:
     get:
       operationId: getFishingForecastContext
       summary: Get factual context for an LLM-generated fishing forecast
-      description: Use this as the primary forecast action. It returns facts, API conditions, data quality, seasonal species notes, similar reports, and recent reports. The GPT must calculate bite scores and probabilities itself.
+      description: Use this as the primary forecast action. It returns facts, hourly API conditions, data quality, seasonal species notes, similar reports, and recent reports. The GPT must calculate bite scores, hourly chances, and probabilities itself.
       parameters:
         - name: spot
           in: query
@@ -305,6 +305,51 @@ components:
           type: number
           nullable: true
 
+    HourlyConditions:
+      type: object
+      properties:
+        time:
+          type: string
+        time_of_day:
+          type: string
+          enum: [dawn, day, dusk, night]
+        wind_speed:
+          type: number
+          nullable: true
+        wind_direction:
+          type: number
+          nullable: true
+        wind_gusts:
+          type: number
+          nullable: true
+        air_temperature:
+          type: number
+          nullable: true
+        pressure:
+          type: number
+          nullable: true
+        cloud_cover:
+          type: number
+          nullable: true
+        rain:
+          type: number
+          nullable: true
+        wave_height:
+          type: number
+          nullable: true
+        wave_period:
+          type: number
+          nullable: true
+        wave_direction:
+          type: number
+          nullable: true
+        sea_temperature:
+          type: number
+          nullable: true
+        tide_level:
+          type: number
+          nullable: true
+
     SimilarReport:
       type: object
       properties:
@@ -401,6 +446,10 @@ components:
           $ref: "#/components/schemas/Spot"
         conditions:
           $ref: "#/components/schemas/Conditions"
+        hourly_conditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/HourlyConditions"
         api_raw_available:
           type: object
           properties:

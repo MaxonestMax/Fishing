@@ -87,6 +87,23 @@ class ConditionsSnapshot(BaseModel):
     moon_illumination: float | None = None
 
 
+class HourlyConditions(BaseModel):
+    time: str
+    time_of_day: Literal["dawn", "day", "dusk", "night"]
+    wind_speed: float | None = None
+    wind_direction: float | None = None
+    wind_gusts: float | None = None
+    air_temperature: float | None = None
+    pressure: float | None = None
+    cloud_cover: float | None = None
+    rain: float | None = None
+    wave_height: float | None = None
+    wave_period: float | None = None
+    wave_direction: float | None = None
+    sea_temperature: float | None = None
+    tide_level: float | None = None
+
+
 class SpeciesForecast(BaseModel):
     species: str
     probability: int = Field(ge=0, le=100)
@@ -146,6 +163,7 @@ class ForecastContextResponse(BaseModel):
     target_species: str | None = None
     spot_profile: dict[str, Any]
     conditions: ConditionsSnapshot
+    hourly_conditions: list[HourlyConditions]
     api_raw_available: dict[str, bool]
     data_quality: DataQuality
     seasonal_species_notes: list[SeasonalSpeciesNote]

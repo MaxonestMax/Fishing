@@ -180,13 +180,14 @@ Use `/forecast-context` as the main Action for prediction. The backend gathers f
 
 - spot profile
 - weather and marine API data
+- hourly conditions for LLM-generated hourly chance charts
 - sunrise/sunset and moon
 - historical reports
 - similar reports
 - seasonal species notes
 - data quality and missing fields
 
-The Custom GPT then performs the final fishing interpretation and calculates all bite scores itself. It may use general fishing knowledge, but it must not invent exact missing API values or pretend that limited history is strong evidence.
+The Custom GPT then performs the final fishing interpretation and calculates all bite scores itself, including approximate hourly chance charts when useful. It may use general fishing knowledge, but it must not invent exact missing API values or pretend that limited history is strong evidence.
 
 The GPT instructions make the LLM the primary analyst. Forecast answers should lead with wave height, wind speed, wind direction, and trend, then rank target species by estimated catch chance. The main priority species are tarachun, locus/grouper, palamida/bonito, gombar/leerfish, and dorado/mahi mahi. When web browsing is available, the GPT should also check public shore-spinning reports from `https://www.spinningist.com/forum/2` as anecdotal forum context.
 

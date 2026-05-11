@@ -14,6 +14,7 @@ from app.models import (
     DataQuality,
     ForecastContextResponse,
     ForecastResponse,
+    HourlyConditions,
     ReportIn,
     ReportOut,
     SeasonalSpeciesNote,
@@ -93,6 +94,65 @@ def _recent_reports(reports: list[ReportOut], spot: str, limit: int = 8) -> list
     filtered = [report for report in reports if (report.spot or "").lower() == spot.lower()]
     filtered.sort(key=lambda report: report.date or "", reverse=True)
     return filtered[:limit]
+
+
+def _value_at(hourly: dict, key: str, index: int):
+    values = hourly.get(key) or []
+    if index >= len(values):
+        return None
+    value = values[index]
+    return round(float(value), 2) if value is not None else None
+
+
+def _hour_from_timestamp(timestamp: str) -> int | None:
+    try:
+        return int(timestamp.split("T", 1)[1].split(":", 1)[0])
+    except (IndexError, ValueError):
+        return None
+
+
+def _time_of_day(hour: int | None) -> str:
+    if hour is None:
+        return "day"
+    if 4 <= hour <= 8:
+        return "dawn"
+    if 9 <= hour <= 16:
+        return "day"
+    if 17 <= hour <= 20:
+        return "dusk"
+    return "night"
+
+
+def _build_hourly_conditions(weather: dict, marine: dict) -> list[HourlyConditions]:
+    weather_hourly = (weather.get("raw") or {}).get("hourly") or {}
+    marine_hourly = (marine.get("raw") or {}).get("hourly") or {}
+    weather_times = weather_hourly.get("time") or []
+    marine_times = marine_hourly.get("time") or []
+    marine_index_by_time = {timestamp: idx for idx, timestamp in enumerate(marine_times)}
+
+    rows: list[HourlyConditions] = []
+    for weather_index, timestamp in enumerate(weather_times):
+        marine_index = marine_index_by_time.get(timestamp)
+        hour = _hour_from_timestamp(timestamp)
+        rows.append(
+            HourlyConditions(
+                time=timestamp,
+                time_of_day=_time_of_day(hour),
+                wind_speed=_value_at(weather_hourly, "wind_speed_10m", weather_index),
+                wind_direction=_value_at(weather_hourly, "wind_direction_10m", weather_index),
+                wind_gusts=_value_at(weather_hourly, "wind_gusts_10m", weather_index),
+                air_temperature=_value_at(weather_hourly, "temperature_2m", weather_index),
+                pressure=_value_at(weather_hourly, "pressure_msl", weather_index),
+                cloud_cover=_value_at(weather_hourly, "cloud_cover", weather_index),
+                rain=_value_at(weather_hourly, "rain", weather_index),
+                wave_height=_value_at(marine_hourly, "wave_height", marine_index) if marine_index is not None else None,
+                wave_period=_value_at(marine_hourly, "wave_period", marine_index) if marine_index is not None else None,
+                wave_direction=_value_at(marine_hourly, "wave_direction", marine_index) if marine_index is not None else None,
+                sea_temperature=_value_at(marine_hourly, "sea_surface_temperature", marine_index) if marine_index is not None else None,
+                tide_level=_value_at(marine_hourly, "sea_level_height_msl", marine_index) if marine_index is not None else None,
+            )
+        )
+    return rows
 
 
 async def _collect_forecast_inputs(
@@ -234,7 +294,7 @@ async def forecast_context(
     target_species: Annotated[str | None, Query(description="Optional species filter")] = None,
     settings: Settings = Depends(settings_dep),
 ) -> ForecastContextResponse:
-    fishing_spot, weather_ok, marine_ok, reports_ok, reports, similar, conditions, warnings, _, _, _ = await _collect_forecast_inputs(
+    fishing_spot, weather_ok, marine_ok, reports_ok, reports, similar, conditions, warnings, weather, marine, _ = await _collect_forecast_inputs(
         settings, spot, date_, start_time, end_time, target_species
     )
     missing_data = _missing_condition_fields(conditions)
@@ -259,6 +319,7 @@ async def forecast_context(
         target_species=target_species,
         spot_profile=fishing_spot.to_dict(),
         conditions=conditions,
+        hourly_conditions=_build_hourly_conditions(weather, marine),
         api_raw_available={"weather": weather_ok, "marine": marine_ok, "historical_reports": reports_ok},
         data_quality=DataQuality(
             weather_api_ok=weather_ok,
@@ -278,6 +339,7 @@ async def forecast_context(
             "You, the LLM, must calculate bite scores and species probabilities yourself from the facts in this context.",
             "Do not treat backend /forecast scores as authoritative for this context response.",
             "Return probabilities and confidence, but explain they are LLM expert estimates, not API-calculated facts or guarantees.",
+            "Build an hourly chance chart from hourly_conditions when the user asks when the best hours are.",
             "If historical_reports_count is low, explicitly say that local historical data is limited.",
             "Include safety warnings when reef, wind, swell, darkness, or access risks matter.",
             "Favor practical shore-spinning recommendations: species, best window, lures, retrieve, and where to cast.",
