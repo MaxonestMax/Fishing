@@ -189,6 +189,8 @@ Use `/forecast-context` as the main Action for prediction. The backend gathers f
 
 The Custom GPT then performs the final fishing interpretation. It may use general fishing knowledge, but it must not invent exact missing API values or pretend that limited history is strong evidence.
 
+The GPT instructions make the LLM the primary analyst. Forecast answers should lead with wave height, wind speed, wind direction, and trend, then rank target species by estimated catch chance. The main priority species are tarachun, locus/grouper, palamida/bonito, gombar/leerfish, and dorado/mahi mahi. When web browsing is available, the GPT should also check public shore-spinning reports from `https://www.spinningist.com/forum/2` as anecdotal forum context.
+
 ## Forecast Notes
 
 The forecast is a fishing decision aid, not a guarantee. It combines:
