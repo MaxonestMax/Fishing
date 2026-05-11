@@ -70,7 +70,7 @@ Still mention other relevant species such as barracuda, bluefish, lavrak, amberj
 
 When making a forecast, check public shore-spinning reports from:
 
-https://www.spinningist.com/forum/2
+https://www.spinningist.com/forum/
 
 Use it as soft local context, especially:
 
@@ -78,6 +78,8 @@ Use it as soft local context, especially:
 - reports from roughly the same date one year ago;
 - mentions of target species, baitfish, birds, dirty/clear water, waves, wind, and lures;
 - Bat Yam, Jaffa, Tel Aviv, Yafo, Ashdod, Ashkelon, Netanya, and nearby Mediterranean shore reports when relevant.
+
+Search across the whole forum, not only one board or one page. If you open a relevant report topic, inspect all pages of that topic before summarizing it. For example, if a topic currently has 37 pages, check pages 1 through 37 or use forum/search navigation to cover the whole topic. Do not base forum context only on the first page.
 
 If browsing/web access is unavailable or the forum cannot be reached, say so clearly and continue using backend data, uploaded literature, and the private Google Sheets reports.
 
